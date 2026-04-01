@@ -1,0 +1,67 @@
+services:
+  gateway:
+    image: golang:alpine
+    container_name: gateway
+    working_dir: /app
+    volumes:
+      - ./gateway:/app
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - REPLICAS=replica1:8081,replica2:8082,replica3:8083
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    networks:
+      - raft-net
+
+  replica1:
+    image: golang:alpine
+    container_name: replica1
+    working_dir: /app
+    volumes:
+      - ./replica1:/app
+    ports:
+      - "8081:8081"
+    environment:
+      - REPLICA_ID=1
+      - PORT=8081
+      - PEERS=replica2:8082,replica3:8083
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    networks:
+      - raft-net
+
+  replica2:
+    image: golang:alpine
+    container_name: replica2
+    working_dir: /app
+    volumes:
+      - ./replica2:/app
+    ports:
+      - "8082:8082"
+    environment:
+      - REPLICA_ID=2
+      - PORT=8082
+      - PEERS=replica1:8081,replica3:8083
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    networks:
+      - raft-net
+
+  replica3:
+    image: golang:alpine
+    container_name: replica3
+    working_dir: /app
+    volumes:
+      - ./replica3:/app
+    ports:
+      - "8083:8083"
+    environment:
+      - REPLICA_ID=3
+      - PORT=8083
+      - PEERS=replica1:8081,replica2:8082
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    networks:
+      - raft-net
+
+networks:
+  raft-net:
+    driver: bridge

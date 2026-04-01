@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-RAFT Distributed Canvas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="dashboard">
+            <h2>Cluster Status</h2>
+            <div id="nodes-container">
+                </div>
+            <div class="controls">
+                <button id="clear-btn">Clear Canvas (Local)</button>
+                <div class="color-picker">
+                    <button class="color-btn active" data-color="#0f172a" style="background: #0f172a;"></button>
+                    <button class="color-btn" data-color="#ef4444" style="background: #ef4444;"></button>
+                    <button class="color-btn" data-color="#3b82f6" style="background: #3b82f6;"></button>
+                    <button class="color-btn" data-color="#10b981" style="background: #10b981;"></button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="canvas-container">
+            <canvas id="drawing-board"></canvas>
+            <div id="connection-status" class="status-badge connecting">Connecting to Gateway...</div>
+        </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script src="canvas.js"></script>
+</body>
+</html>

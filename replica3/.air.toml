@@ -1,0 +1,32 @@
+# .air.toml
+# Config file for Air (Live reload for Go apps)
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Just build the main executable
+  cmd = "go build -o ./tmp/main ."
+  # Run the compiled binary
+  bin = "./tmp/main"
+  # Watch for these file extensions
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  # Ignore these directories
+  exclude_dir = ["assets", "tmp", "vendor", "frontend"]
+  # Delay to prevent triggering too many builds
+  delay = 1000 # ms
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = 500 # ms
+
+[log]
+  time = false
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

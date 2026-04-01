@@ -1,0 +1,51 @@
+:root {
+    --bg-color: #f8fafc;
+    --sidebar-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --leader-color: #10b981;
+    --follower-color: #3b82f6;
+    --candidate-color: #f59e0b;
+    --offline-color: #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+.app-container { display: flex; height: 100vh; }
+
+/* Dashboard Sidebar */
+.dashboard { width: 320px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; }
+.dashboard h2 { font-size: 1.1rem; margin-bottom: 20px; color: var(--text-main); font-weight: 600; }
+
+.node-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; transition: all 0.2s; }
+.node-card.offline { opacity: 0.6; border-color: #fee2e2; background: #fef2f2; }
+
+.node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; }
+.state-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.state-Leader { background-color: var(--leader-color); }
+.state-Follower { background-color: var(--follower-color); }
+.state-Candidate { background-color: var(--candidate-color); }
+.state-Offline { background-color: var(--offline-color); }
+
+.node-stats { font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+
+/* Canvas Area */
+.canvas-container { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #e2e8f0; }
+canvas { background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border-radius: 8px; cursor: crosshair; }
+
+.status-badge { position: absolute; top: 20px; right: 20px; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+.connecting { background: #fef3c7; color: #b45309; }
+.connected { background: #d1fae5; color: #065f46; }
+.disconnected { background: #fee2e2; color: #991b1b; }
+
+/* Controls */
+.controls { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); }
+button { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-color); background: white; cursor: pointer; font-weight: 500; width: 100%; transition: background 0.1s; }
+button:hover { background: #f1f5f9; }
+.color-picker { display: flex; gap: 8px; margin-top: 12px; }
+.color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer; }
+.color-btn.active { border-color: #cbd5e1; transform: scale(1.1); }
