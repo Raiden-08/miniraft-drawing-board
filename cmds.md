@@ -111,3 +111,28 @@ foreach ($port in 8081,8082,8083,8084,8085) { try { $r = Invoke-RestMethod "http
 ```
 
 Everything is working flawlessly! Let me know if you want to make any further tweaks or build out any more features.
+
+
+Here are the direct links to access each board separately:
+
+🖥️ Replica 1: 
+```
+file:///C:/Users/Client/Documents/project/CC/miniraft-drawing-board/frontend/index.html?node=1
+```
+
+🖥️ Replica 2: 
+```
+file:///C:/Users/Client/Documents/project/CC/miniraft-drawing-board/frontend/index.html?node=2
+```
+🖥️ Replica 3: 
+```
+file:///C:/Users/Client/Documents/project/CC/miniraft-drawing-board/frontend/index.html?node=3
+```
+🖥️ Replica 4: 
+```
+file:///C:/Users/Client/Documents/project/CC/miniraft-drawing-board/frontend/index.html?node=4
+```
+🖥️ Replica 5: 
+```
+file:///C:/Users/Client/Documents/project/CC/miniraft-drawing-board/frontend/index.html?node=5
+```

@@ -445,6 +445,9 @@ function replayBoardStrokes(port) {
 function renderBoards(statuses) {
   const grid = document.getElementById('boards-grid');
   const statusEl = document.getElementById('boards-cluster-status');
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const isolatedNodeId = urlParams.get('node');
 
   // Update cluster status strip
   const onlinePorts = NODES.filter(n => statuses[n.port]).length;
@@ -464,12 +467,23 @@ function renderBoards(statuses) {
     const isOffline = !s;
     const isLeader  = state === 'Leader';
 
+    if (isolatedNodeId && node.id.toString() !== isolatedNodeId) {
+      const existing = document.getElementById(`board-card-${node.port}`);
+      if (existing) existing.remove();
+      return;
+    }
+
     let card = document.getElementById(`board-card-${node.port}`);
     const isNew = !card;
 
     if (isNew) {
       card = document.createElement('div');
       card.id = `board-card-${node.port}`;
+      if (isolatedNodeId) {
+        card.style.height = '100vh';
+        card.style.border = 'none';
+        card.style.borderRadius = '0';
+      }
       grid.appendChild(card);
     }
 
@@ -523,7 +537,7 @@ function renderBoards(statuses) {
           ${chaosLabel}
         </div>
       </div>
-      <div class="board-canvas-wrap">
+      <div class="board-canvas-wrap" style="${isolatedNodeId ? 'flex: 1; aspect-ratio: auto;' : ''}">
         <canvas id="board-canvas-${node.port}" class="board-canvas"></canvas>
         ${syncBadge}
         <div class="board-overlay ${overlayHidden}">
@@ -559,6 +573,28 @@ function clearAllBoards() {
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const isolatedNodeId = urlParams.get('node');
+
+if (isolatedNodeId) {
+  // Hide UI elements not needed for isolated view
+  const nav = document.getElementById('tab-nav');
+  if (nav) nav.style.display = 'none';
+  const header = document.querySelector('.boards-header');
+  if (header) header.style.display = 'none';
+  
+  // Force active tab to boards
+  document.getElementById('view-dashboard').classList.remove('active');
+  document.getElementById('view-boards').classList.add('active');
+  
+  // Adjust grid for full screen
+  const grid = document.getElementById('boards-grid');
+  if (grid) {
+    grid.style.padding = '0';
+    grid.style.display = 'block'; // remove grid layout to fill screen
+  }
+}
+
 initTopology();
 initChaosControls();
 setInterval(poll, 500);
