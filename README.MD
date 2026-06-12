@@ -1,6 +1,6 @@
-# 🗳️ Mini-RAFT Drawing Board — v2 (with Chaos Monkey)
+# 🗳️ Mini-RAFT Drawing Board — v3 (All Boards + Auto-Chaos)
 
-A hands-on implementation of the **Raft consensus algorithm**, built around a real-time collaborative drawing board. Every brush stroke is a distributed log entry — it only appears on screen once a majority of nodes agree it exists. The v2 upgrade scales the cluster from 3 to **5 nodes** and introduces a **Chaos Monkey** engine so you can watch live leader elections, network partitions, and node recovery in a purpose-built terminal-style dashboard.
+A hands-on implementation of the **Raft consensus algorithm**, built around a real-time collaborative drawing board. Every brush stroke is a distributed log entry — it only appears on screen once a majority of nodes agree it exists. The v3 upgrade adds an **All Boards** multi-canvas view, an **Auto-Chaos** engine, and an offline-node guard so chaos controls never fire against dead replicas.
 
 **GitHub:** https://github.com/Raiden-08/miniraft-drawing-board
 
@@ -38,10 +38,18 @@ When you drew a line, it traveled: `browser → WebSocket → gateway → leader
 
 Built on top of v1 without breaking any existing behavior:
 
-- **Scaled to 5 nodes** — quorum is now 3, so you can kill 2 nodes simultaneously and consensus still holds. This makes failure scenarios far more interesting to watch.
-- **Chaos Monkey** — every replica exposes a `/chaos` HTTP endpoint. You can partition a node (drops all RPCs), slow it down (adds 400 ms artificial latency), or hard-kill it (process panic, Docker restarts it). All controllable from the UI or `curl`.
-- **Redesigned dashboard** — dark terminal aesthetic, SVG ring topology diagram showing live node states with animated edges, color-coded event log streaming from every node's internal event buffer, and per-node chaos control buttons.
-- **`restart: on-failure`** in `docker-compose.yml` — killed nodes automatically come back and re-sync their stale log via the catch-up protocol.
+- **Scaled to 5 nodes** — quorum is now 3, so you can kill 2 nodes simultaneously and consensus still holds.
+- **Chaos Monkey** — every replica exposes a `/chaos` HTTP endpoint (partition / slowdown / heal / kill). All controllable from the UI or `curl`.
+- **Redesigned dashboard** — dark terminal aesthetic, SVG ring topology, color-coded event log, per-node chaos buttons.
+- **`restart: on-failure`** in `docker-compose.yml` — killed nodes come back and re-sync automatically.
+
+### v3 — All Boards View + Auto-Chaos + Offline Guard
+
+Three quality-of-life upgrades on top of v2:
+
+- **All Boards tab** — a dedicated page showing a live drawing canvas for every one of the 5 replicas side-by-side. Each board mirrors all committed strokes received over the WebSocket. The leader's board is highlighted with a 👑 and a `Source` badge; offline/partitioned boards show an overlay instead of buttons. Quick Heal/Kill shortcuts live in each board's footer.
+- **Auto-Chaos engine** — a toggle button in the right panel fires a random chaos action every **15 seconds** automatically. It is quorum-aware: it will not kill a node if only 3 remain online, preventing a full cluster stall. A live countdown bar shows time until the next event.
+- **Offline-node guard** — `sendChaos()` now checks the most recent `/status` poll before firing any HTTP request. If the target node is not in the live-status map (i.e. its container is down or restarting), the UI logs a warning and skips the network call entirely. This eliminates the `✘ Could not reach Replica :XXXX (already dead?)` error that occurred when trying to heal or kill a node whose Docker container had already exited.
 
 ---
 
@@ -174,25 +182,35 @@ The chaos state is stored in a `sync.RWMutex`-protected field on `RaftNode`, saf
 
 The frontend is a static three-column layout. No framework, no build step — just open `frontend/index.html` in a browser.
 
-**Left panel — Cluster:**
-- SVG ring topology with all 5 nodes. Leader pulses larger with a 👑 emoji. Partitioned nodes turn red with dashed edges to show severed links. Offline nodes dim.
+**Tab bar (top):**
+- Switch between **Dashboard** and **All Boards** views. Cluster health badge visible on every tab.
+
+**Left panel — Cluster (Dashboard tab):**
+- SVG ring topology with all 5 nodes. Leader pulses larger with a 👑 emoji. Partitioned nodes turn red with dashed edges. Offline nodes dim.
 - Per-node cards: role pill (Leader / Follower / Candidate / Offline), current term, log size, active chaos mode.
 - Cluster health badge: `Healthy` (leader + quorum) → `Electing` (no leader) → `Degraded` (below quorum).
 
-**Center — Canvas:**
+**Center — Canvas (Dashboard tab):**
 - Drawing board. Every stroke goes through full consensus before rendering. WebSocket badge shows connection state and auto-reconnects on disconnect.
 
-**Right panel — Chaos & Log:**
-- Per-node buttons: Partition / Slow / Heal / Kill.
-- Live event log from all nodes' internal event buffers, colour-coded: elections (amber), leader wins (green), votes (blue), chaos events (red), log syncs (teal).
-- Color picker and canvas clear button.
+**Right panel — Chaos & Log (Dashboard tab):**
+- **⚡ Auto-Chaos toggle** — enables automatic random chaos every 15 s with a live countdown bar. Quorum-safe (won't kill nodes when only 3 remain).
+- Per-node buttons: `Part` / `Slow` / `Heal` / `Kill`. Offline nodes show a red `⬤ Offline / Restarting` badge instead of buttons — clicking is blocked.
+- Live event log (color-coded), color picker, canvas clear.
+
+**All Boards tab:**
+- 2-column responsive grid showing a live canvas for each of the 5 replicas.
+- Boards update in real time as strokes are committed and broadcast.
+- Leader board highlighted in green with `✓ Source` badge.
+- Partitioned / offline boards display a dark overlay with the chaos state.
+- Per-board quick-action buttons (Heal / Kill / Partition) in the footer.
 
 ---
 
 ## 6. Project Structure
 
 ```
-miniraft-v2/
+miniraft-drawing-board/
 ├── docker-compose.yml          # 6 services on raft-net bridge, restart: on-failure
 │
 ├── gateway/
@@ -204,17 +222,20 @@ miniraft-v2/
 ├── replica1/                   # All 5 replicas share identical code
 │   ├── main.go                 # HTTP server, env config, route registration
 │   ├── raft.go                 # Raft: election, heartbeat, replication,
-│   │                           # catch-up, chaos engine, event log (565 lines)
+│   │                           # catch-up, chaos engine, event log (566 lines)
 │   ├── go.mod
 │   └── .air.toml
 │
 ├── replica2/ … replica5/       # Same files as replica1
 │
 └── frontend/
-    ├── index.html              # Three-column shell
-    ├── dashboard.js            # SVG topology, node cards, chaos controls, event log
-    ├── canvas.js               # Drawing + WebSocket client, color picker
-    └── style.css               # Dark terminal theme, CSS variables
+    ├── index.html              # Tab nav shell (Dashboard + All Boards tabs)
+    ├── dashboard.js            # SVG topology, node cards, chaos controls,
+    │                           # auto-chaos engine, boards grid, event log
+    ├── canvas.js               # Drawing + WebSocket client, color picker,
+    │                           # stroke mirror hook for boards tab
+    └── style.css               # Dark Inter/Fira Code theme, CSS variables,
+                                # board cards, auto-chaos countdown bar
 ```
 
 Each replica is differentiated entirely by environment variables injected at runtime:

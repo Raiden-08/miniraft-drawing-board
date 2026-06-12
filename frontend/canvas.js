@@ -11,19 +11,19 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-const COLORS = ['#0f172a','#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6'];
+const COLORS = ['#0f172a', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 let drawing = false;
-let cur = { x: 0, y: 0, color: COLORS[0] };
+let cur = { x: 0, y: 0, color: COLORS[1] }; // default to red
 let ws;
 
 // Color picker
 const picker = document.getElementById('color-picker');
 COLORS.forEach((c, i) => {
   const btn = document.createElement('button');
-  btn.className = 'color-btn' + (i === 0 ? ' active' : '');
+  btn.className = 'color-btn' + (i === 1 ? ' active' : '');
   btn.style.background = c;
   btn.dataset.color = c;
-  btn.onclick = e => {
+  btn.onclick = () => {
     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     cur.color = c;
@@ -46,7 +46,12 @@ function connect() {
   };
   ws.onmessage = e => {
     const s = JSON.parse(e.data);
+    // Draw on main canvas
     drawLine(s.x0, s.y0, s.x1, s.y1, s.color, false);
+    // Mirror to board canvases (boards tab)
+    if (typeof window.onBoardStroke === 'function') {
+      window.onBoardStroke(s);
+    }
   };
 }
 
