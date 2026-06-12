@@ -3,30 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini-RAFT Distributed Canvas</title>
+    <title>Mini-RAFT — Distributed Drawing Board</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <aside class="dashboard">
-            <h2>Cluster Status</h2>
-            <div id="nodes-container">
-                </div>
-            <div class="controls">
-                <button id="clear-btn">Clear Canvas (Local)</button>
-                <div class="color-picker">
-                    <button class="color-btn active" data-color="#0f172a" style="background: #0f172a;"></button>
-                    <button class="color-btn" data-color="#ef4444" style="background: #ef4444;"></button>
-                    <button class="color-btn" data-color="#3b82f6" style="background: #3b82f6;"></button>
-                    <button class="color-btn" data-color="#10b981" style="background: #10b981;"></button>
-                </div>
+    <div class="layout">
+
+        <!-- LEFT: Cluster Visualizer -->
+        <aside class="panel panel-left">
+            <div class="panel-header">
+                <span class="panel-title">Cluster</span>
+                <span id="cluster-health" class="health-badge">●  Healthy</span>
             </div>
+
+            <!-- Ring topology diagram -->
+            <div class="topology-wrap">
+                <svg id="topology-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+
+            <!-- Node cards -->
+            <div id="nodes-container"></div>
         </aside>
 
-        <main class="canvas-container">
+        <!-- CENTER: Canvas -->
+        <main class="canvas-wrap">
             <canvas id="drawing-board"></canvas>
-            <div id="connection-status" class="status-badge connecting">Connecting to Gateway...</div>
+            <div id="ws-badge" class="ws-badge connecting">Connecting…</div>
         </main>
+
+        <!-- RIGHT: Chaos + Event log -->
+        <aside class="panel panel-right">
+            <div class="panel-header">
+                <span class="panel-title">Chaos Monkey 🐒</span>
+            </div>
+
+            <div class="chaos-legend">
+                <span class="legend-item"><span class="dot dot-partition"></span>Partitioned</span>
+                <span class="legend-item"><span class="dot dot-slowdown"></span>Slow</span>
+                <span class="legend-item"><span class="dot dot-normal"></span>Normal</span>
+            </div>
+
+            <div id="chaos-controls"></div>
+
+            <div class="divider"></div>
+
+            <div class="panel-header">
+                <span class="panel-title">Event Log</span>
+                <button class="btn-small" onclick="document.getElementById('event-log').innerHTML=''">Clear</button>
+            </div>
+            <div id="event-log" class="event-log"></div>
+
+            <div class="divider"></div>
+
+            <div class="panel-header"><span class="panel-title">Draw</span></div>
+            <div class="color-picker" id="color-picker"></div>
+            <button class="btn-clear" onclick="clearCanvas()">Clear Canvas (local)</button>
+        </aside>
     </div>
 
     <script src="dashboard.js"></script>
