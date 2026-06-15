@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -24,6 +25,8 @@ func main() {
 	}
 
 	log.Printf("Starting Replica %s on port %s with %d peers...", id, port, len(peers))
+
+	time.Sleep(6 * time.Second)
 
 	node := NewRaftNode(id, peers)
 	go node.Start()
