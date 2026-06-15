@@ -9,7 +9,7 @@ services:
       - "8080:8080"
     environment:
       - PORT=8080
-      - REPLICAS=replica1:8081,replica2:8082,replica3:8083
+      - REPLICAS=replica1:8081,replica2:8082,replica3:8083,replica4:8084,replica5:8085
     command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
     networks:
       - raft-net
@@ -25,8 +25,9 @@ services:
     environment:
       - REPLICA_ID=1
       - PORT=8081
-      - PEERS=replica2:8082,replica3:8083
+      - PEERS=replica2:8082,replica3:8083,replica4:8084,replica5:8085
     command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    restart: on-failure
     networks:
       - raft-net
 
@@ -41,8 +42,9 @@ services:
     environment:
       - REPLICA_ID=2
       - PORT=8082
-      - PEERS=replica1:8081,replica3:8083
+      - PEERS=replica1:8081,replica3:8083,replica4:8084,replica5:8085
     command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    restart: on-failure
     networks:
       - raft-net
 
@@ -57,8 +59,43 @@ services:
     environment:
       - REPLICA_ID=3
       - PORT=8083
-      - PEERS=replica1:8081,replica2:8082
+      - PEERS=replica1:8081,replica2:8082,replica4:8084,replica5:8085
     command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    restart: on-failure
+    networks:
+      - raft-net
+
+  replica4:
+    image: golang:alpine
+    container_name: replica4
+    working_dir: /app
+    volumes:
+      - ./replica4:/app
+    ports:
+      - "8084:8084"
+    environment:
+      - REPLICA_ID=4
+      - PORT=8084
+      - PEERS=replica1:8081,replica2:8082,replica3:8083,replica5:8085
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    restart: on-failure
+    networks:
+      - raft-net
+
+  replica5:
+    image: golang:alpine
+    container_name: replica5
+    working_dir: /app
+    volumes:
+      - ./replica5:/app
+    ports:
+      - "8085:8085"
+    environment:
+      - REPLICA_ID=5
+      - PORT=8085
+      - PEERS=replica1:8081,replica2:8082,replica3:8083,replica4:8084
+    command: sh -c "go install github.com/air-verse/air@latest && air -c .air.toml"
+    restart: on-failure
     networks:
       - raft-net
 
