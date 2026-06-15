@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -503,7 +504,10 @@ func (rn *RaftNode) HandleChaos(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		go func() {
 			time.Sleep(100 * time.Millisecond)
-			panic("chaos kill") // will cause container to restart via docker compose
+			if p, err := os.FindProcess(os.Getppid()); err == nil {
+				p.Kill()
+			}
+			os.Exit(1)
 		}()
 		return
 	}
