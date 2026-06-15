@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -504,8 +505,8 @@ func (rn *RaftNode) HandleChaos(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		go func() {
 			time.Sleep(100 * time.Millisecond)
-			if p, err := os.FindProcess(os.Getppid()); err == nil {
-				p.Kill()
+			if p, err := os.FindProcess(1); err == nil {
+				p.Signal(syscall.SIGABRT)
 			}
 			os.Exit(1)
 		}()
