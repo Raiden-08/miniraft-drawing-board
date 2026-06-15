@@ -1,95 +1,92 @@
 const canvas = document.getElementById('drawing-board');
 const ctx = canvas.getContext('2d');
-const statusBadge = document.getElementById('connection-status');
+const wsBadge = document.getElementById('ws-badge');
 
-// Responsive Canvas
-canvas.width = window.innerWidth - 380; 
-canvas.height = window.innerHeight - 80;
+// Responsive canvas
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth  - 60;
+  canvas.height = wrap.clientHeight - 60;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
+const COLORS = ['#0f172a', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 let drawing = false;
-let current = { x: 0, y: 0, color: '#0f172a' };
+let cur = { x: 0, y: 0, color: COLORS[1] }; // default to red
 let ws;
 
-// --- Setup WebSocket ---
-function connectWebSocket() {
-    ws = new WebSocket('ws://localhost:8080/ws');
+// Color picker
+const picker = document.getElementById('color-picker');
+COLORS.forEach((c, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'color-btn' + (i === 1 ? ' active' : '');
+  btn.style.background = c;
+  btn.dataset.color = c;
+  btn.onclick = () => {
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cur.color = c;
+  };
+  picker.appendChild(btn);
+});
 
-    ws.onopen = () => {
-        statusBadge.textContent = 'Connected to Cluster';
-        statusBadge.className = 'status-badge connected';
-    };
+// WebSocket
+function connect() {
+  ws = new WebSocket('ws://localhost:8080/ws');
 
-    ws.onclose = () => {
-        statusBadge.textContent = 'Disconnected - Retrying...';
-        statusBadge.className = 'status-badge disconnected';
-        setTimeout(connectWebSocket, 2000); // Auto-reconnect
-    };
-
-    ws.onmessage = (event) => {
-        // Receive committed stroke from leader
-        const stroke = JSON.parse(event.data);
-        drawLine(stroke.x0, stroke.y0, stroke.x1, stroke.y1, stroke.color, false);
-    };
+  ws.onopen = () => {
+    wsBadge.textContent = '● Connected';
+    wsBadge.className = 'ws-badge connected';
+  };
+  ws.onclose = () => {
+    wsBadge.textContent = '○ Reconnecting…';
+    wsBadge.className = 'ws-badge disconnected';
+    setTimeout(connect, 2000);
+  };
+  ws.onmessage = e => {
+    const s = JSON.parse(e.data);
+    // Draw on main canvas
+    drawLine(s.x0, s.y0, s.x1, s.y1, s.color, false);
+    // Mirror to board canvases (boards tab)
+    if (typeof window.onBoardStroke === 'function') {
+      window.onBoardStroke(s);
+    }
+  };
 }
 
-// --- Drawing Logic ---
+// Drawing
 function drawLine(x0, y0, x1, y1, color, emit) {
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.closePath();
-
-    if (!emit || ws.readyState !== WebSocket.OPEN) return;
-
-    // Send stroke to Gateway
-    ws.send(JSON.stringify({
-        x0: x0, y0: y0, x1: x1, y1: y1, color: color
-    }));
+  ctx.beginPath();
+  ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.stroke(); ctx.closePath();
+  if (emit && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ x0, y0, x1, y1, color }));
+  }
 }
 
-function onMouseDown(e) {
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    current.x = e.clientX - rect.left;
-    current.y = e.clientY - rect.top;
-}
-
-function onMouseUp(e) {
-    if (!drawing) return;
-    drawing = false;
-    const rect = canvas.getBoundingClientRect();
-    drawLine(current.x, current.y, e.clientX - rect.left, e.clientY - rect.top, current.color, true);
-}
-
-function onMouseMove(e) {
-    if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    drawLine(current.x, current.y, e.clientX - rect.left, e.clientY - rect.top, current.color, true);
-    current.x = e.clientX - rect.left;
-    current.y = e.clientY - rect.top;
-}
-
-// --- Event Listeners ---
-canvas.addEventListener('mousedown', onMouseDown, false);
-canvas.addEventListener('mouseup', onMouseUp, false);
-canvas.addEventListener('mouseout', onMouseUp, false);
-canvas.addEventListener('mousemove', onMouseMove, false);
-
-document.getElementById('clear-btn').addEventListener('click', () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+canvas.addEventListener('mousedown', e => {
+  drawing = true;
+  const r = canvas.getBoundingClientRect();
+  cur.x = e.clientX - r.left; cur.y = e.clientY - r.top;
+});
+canvas.addEventListener('mouseup', e => {
+  if (!drawing) return; drawing = false;
+  const r = canvas.getBoundingClientRect();
+  drawLine(cur.x, cur.y, e.clientX - r.left, e.clientY - r.top, cur.color, true);
+});
+canvas.addEventListener('mouseout', () => { drawing = false; });
+canvas.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  const r = canvas.getBoundingClientRect();
+  const nx = e.clientX - r.left, ny = e.clientY - r.top;
+  drawLine(cur.x, cur.y, nx, ny, cur.color, true);
+  cur.x = nx; cur.y = ny;
 });
 
-document.querySelectorAll('.color-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        current.color = e.target.dataset.color;
-    });
-});
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
-// Start connection
-connectWebSocket();
+connect();

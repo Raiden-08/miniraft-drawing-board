@@ -3,30 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini-RAFT Distributed Canvas</title>
+    <title>Mini-RAFT — Distributed Drawing Board</title>
+    <meta name="description" content="A real-time collaborative drawing board powered by the Raft consensus algorithm. Watch live leader elections, chaos injection, and distributed log replication.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <aside class="dashboard">
-            <h2>Cluster Status</h2>
-            <div id="nodes-container">
-                </div>
-            <div class="controls">
-                <button id="clear-btn">Clear Canvas (Local)</button>
-                <div class="color-picker">
-                    <button class="color-btn active" data-color="#0f172a" style="background: #0f172a;"></button>
-                    <button class="color-btn" data-color="#ef4444" style="background: #ef4444;"></button>
-                    <button class="color-btn" data-color="#3b82f6" style="background: #3b82f6;"></button>
-                    <button class="color-btn" data-color="#10b981" style="background: #10b981;"></button>
-                </div>
-            </div>
-        </aside>
 
-        <main class="canvas-container">
-            <canvas id="drawing-board"></canvas>
-            <div id="connection-status" class="status-badge connecting">Connecting to Gateway...</div>
-        </main>
+    <!-- Tab Navigation -->
+    <nav class="tab-nav" id="tab-nav">
+        <div class="tab-nav-left">
+            <span class="app-logo">⚡ Mini-RAFT</span>
+            <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
+                <span class="tab-icon">🖥️</span> Dashboard
+            </button>
+            <button class="tab-btn" id="tab-boards" onclick="switchTab('boards')">
+                <span class="tab-icon">🗂️</span> All Boards
+            </button>
+        </div>
+        <div class="tab-nav-right">
+            <span id="cluster-health-nav" class="health-badge-nav">● Healthy</span>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════ DASHBOARD TAB ═══════════════════ -->
+    <div id="view-dashboard" class="tab-view active">
+        <div class="layout">
+
+            <!-- LEFT: Cluster Visualizer -->
+            <aside class="panel panel-left">
+                <div class="panel-header">
+                    <span class="panel-title">Cluster</span>
+                    <span id="cluster-health" class="health-badge">● Healthy</span>
+                </div>
+
+                <!-- Ring topology diagram -->
+                <div class="topology-wrap">
+                    <svg id="topology-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+
+                <!-- Node cards -->
+                <div id="nodes-container"></div>
+            </aside>
+
+            <!-- CENTER: Canvas -->
+            <main class="canvas-wrap">
+                <canvas id="drawing-board"></canvas>
+                <div id="ws-badge" class="ws-badge connecting">Connecting…</div>
+            </main>
+
+            <!-- RIGHT: Chaos + Event log -->
+            <aside class="panel panel-right">
+                <div class="panel-header">
+                    <span class="panel-title">Chaos Monkey 🐒</span>
+                </div>
+
+                <!-- Auto Chaos Toggle -->
+                <div class="auto-chaos-bar">
+                    <div class="auto-chaos-info">
+                        <span class="auto-chaos-label">⚡ Auto-Chaos</span>
+                        <span class="auto-chaos-desc">Inject random chaos every 15s</span>
+                    </div>
+                    <button id="auto-chaos-btn" class="auto-chaos-toggle" onclick="toggleAutoChaos()">
+                        <span class="toggle-dot"></span>
+                        <span class="toggle-label" id="auto-chaos-status">OFF</span>
+                    </button>
+                </div>
+
+                <div id="auto-chaos-countdown" class="auto-chaos-countdown hidden">
+                    <div class="countdown-bar-wrap">
+                        <div id="countdown-bar" class="countdown-bar"></div>
+                    </div>
+                    <span id="countdown-text" class="countdown-text">Next chaos in 15s</span>
+                </div>
+
+                <div class="chaos-legend">
+                    <span class="legend-item"><span class="dot dot-partition"></span>Partitioned</span>
+                    <span class="legend-item"><span class="dot dot-slowdown"></span>Slow</span>
+                    <span class="legend-item"><span class="dot dot-normal"></span>Normal</span>
+                </div>
+
+                <div id="chaos-controls"></div>
+
+                <div class="divider"></div>
+
+                <div class="panel-header">
+                    <span class="panel-title">Event Log</span>
+                    <button class="btn-small" onclick="document.getElementById('event-log').innerHTML=''">Clear</button>
+                </div>
+                <div id="event-log" class="event-log"></div>
+
+                <div class="divider"></div>
+
+                <div class="panel-header"><span class="panel-title">Draw</span></div>
+                <div class="color-picker" id="color-picker"></div>
+                <button class="btn-clear" onclick="clearCanvas()">Clear Canvas (local)</button>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ BOARDS TAB ═══════════════════ -->
+    <div id="view-boards" class="tab-view">
+        <div class="boards-header">
+            <div class="boards-header-left">
+                <h1 class="boards-title">🗂️ All Node Drawing Boards</h1>
+                <p class="boards-subtitle">Each board mirrors committed strokes — Leader ✓ = source of truth</p>
+            </div>
+            <div class="boards-controls">
+                <span id="boards-cluster-status" class="boards-cluster-status">Fetching cluster state…</span>
+                <button class="btn-boards-clear" onclick="clearAllBoards()">Clear All (local)</button>
+            </div>
+        </div>
+        <div id="boards-grid" class="boards-grid">
+            <!-- Dynamically rendered node boards -->
+        </div>
     </div>
 
     <script src="dashboard.js"></script>
